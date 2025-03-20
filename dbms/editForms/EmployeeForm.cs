@@ -33,7 +33,7 @@ namespace dbms
             var organizationsList = _organizations
                 .Select(org => new { Id = (int?)org.Id, Name = org.Name })
                 .ToList();
-            organizationsList.Insert(0, new { Id = (int?)null, Name = "Нет организации" });
+            //organizationsList.Insert(0, new { Id = (int?)null, Name = "Нет организации" });
 
             comboBoxOrg.DataSource = organizationsList;
             comboBoxOrg.DisplayMember = "Name";
@@ -57,6 +57,11 @@ namespace dbms
             if (string.IsNullOrWhiteSpace(textBoxFirstName.Text))
             {
                 MessageBox.Show("Имя не может быть пустым.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            if (comboBoxOrg.SelectedValue == null || comboBoxOrg.SelectedValue.ToString() == "Нет организации")
+            {
+                MessageBox.Show("Необходимо выбрать организацию.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 

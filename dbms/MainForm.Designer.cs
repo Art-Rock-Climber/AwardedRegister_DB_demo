@@ -64,6 +64,7 @@
             // 
             // trvData
             // 
+            this.trvData.AllowDrop = true;
             this.trvData.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
@@ -71,7 +72,10 @@
             this.trvData.Name = "trvData";
             this.trvData.Size = new System.Drawing.Size(453, 269);
             this.trvData.TabIndex = 1;
+            this.trvData.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.trvData_ItemDrag);
             this.trvData.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.trvData_NodeMouseClick);
+            this.trvData.DragDrop += new System.Windows.Forms.DragEventHandler(this.trvData_DragDrop);
+            this.trvData.DragEnter += new System.Windows.Forms.DragEventHandler(this.trvData_DragEnter);
             // 
             // contextMenuOrg
             // 
@@ -156,7 +160,7 @@
             this.toolStripSeparator2,
             this.удалитьНаградуtoolStripMenuItem});
             this.contextMenuAward.Name = "contextMenuOrg";
-            this.contextMenuAward.Size = new System.Drawing.Size(214, 110);
+            this.contextMenuAward.Size = new System.Drawing.Size(214, 82);
             // 
             // добавитьНаградуtoolStripMenuItem
             // 

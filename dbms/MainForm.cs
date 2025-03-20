@@ -26,11 +26,11 @@ namespace dbms
             _context.Database.Delete();
 
             var orgNode = new TreeNode("Организации");
-            var empNode = new TreeNode("Сотрудники");
-            var awardNode = new TreeNode("Награды");
+            //var empNode = new TreeNode("Сотрудники");
+            //var awardNode = new TreeNode("Награды");
             trvData.Nodes.Add(orgNode);
-            trvData.Nodes.Add(empNode);
-            trvData.Nodes.Add(awardNode);
+            //trvData.Nodes.Add(empNode);
+            //trvData.Nodes.Add(awardNode);
 
             if (true)
             {
@@ -62,41 +62,41 @@ namespace dbms
             }
         }
 
-        //private void LoadDataOld()
-        //{
-        //    trvData.Nodes.Clear();
-        //    var orgNode = new TreeNode("Организации");
-        //    var empNode = new TreeNode("Сотрудники");
-        //    var awardNode = new TreeNode("Награды");
-
-        //    // Загрузка организаций
-        //    var organizations = _context.Organizations.ToList();
-        //    foreach (var org in organizations)
-        //    {
-        //        var orgChildNode = new TreeNode(org.Name) { Tag = org };
-        //        foreach (var emp in org.Employees)
-        //        {
-        //            var empChildNode = new TreeNode($"{emp.LastName} {emp.FirstName} {emp.MiddleName}") { Tag = emp };
-        //            foreach (var award in emp.Awards)
-        //            {
-        //                var awardChildNode = new TreeNode($"{award.Reason} ({award.Date.ToShortDateString()})") { Tag = award };
-        //                //empChildNode.Nodes.Add(awardChildNode);
-        //                //awardNode.Nodes.Add((TreeNode)awardChildNode.Clone());
-        //                awardNode.Nodes.Add(awardChildNode);
-        //            }
-        //            //orgChildNode.Nodes.Add(empChildNode);
-        //            //empNode.Nodes.Add((TreeNode)empChildNode.Clone());
-        //            empNode.Nodes.Add(empChildNode);
-        //        }
-        //        orgNode.Nodes.Add(orgChildNode);
-        //    }
-
-        //    trvData.Nodes.Add(orgNode);
-        //    trvData.Nodes.Add(empNode);
-        //    trvData.Nodes.Add(awardNode);
-        //}
-
         private void LoadData()
+        {
+            trvData.Nodes.Clear();
+            var orgNode = new TreeNode("Организации");
+            //var empNode = new TreeNode("Сотрудники");
+            //var awardNode = new TreeNode("Награды");
+
+            // Загрузка организаций
+            var organizations = _context.Organizations.ToList();
+            foreach (var org in organizations)
+            {
+                var orgChildNode = new TreeNode(org.Name) { Tag = org };
+                foreach (var emp in org.Employees)
+                {
+                    var empChildNode = new TreeNode(emp.ToString()) { Tag = emp };
+                    foreach (var award in emp.Awards)
+                    {
+                        var awardChildNode = new TreeNode(award.ToString()) { Tag = award };
+                        empChildNode.Nodes.Add(awardChildNode);
+                        //awardNode.Nodes.Add((TreeNode)awardChildNode.Clone());
+                        //awardNode.Nodes.Add(awardChildNode);
+                    }
+                    orgChildNode.Nodes.Add(empChildNode);
+                    //empNode.Nodes.Add((TreeNode)empChildNode.Clone());
+                    //empNode.Nodes.Add(empChildNode);
+                }
+                orgNode.Nodes.Add(orgChildNode);
+            }
+
+            trvData.Nodes.Add(orgNode);
+            //trvData.Nodes.Add(empNode);
+            //trvData.Nodes.Add(awardNode);
+        }
+
+        private void LoadDataNew()
         {
             LoadOrganizations();
             LoadEmployees();
@@ -125,6 +125,49 @@ namespace dbms
             awardNode.Nodes.Clear();
             foreach (var award in _context.Awards.ToList())
                 awardNode.Nodes.Add(new TreeNode(award.ToString()) { Tag = award });
+        }
+
+        private void UpdateNode(TreeNode node)
+        {
+            if (node.Tag is Organization org)
+            {
+                // Обновляем узел организации
+                node.Text = org.Name;
+                node.Nodes.Clear();
+
+                // Добавляем сотрудников организации
+                foreach (var emp in org.Employees)
+                {
+                    var empChildNode = new TreeNode(emp.ToString()) { Tag = emp };
+
+                    // Добавляем награды сотрудника
+                    foreach (var award in emp.Awards)
+                    {
+                        var awardChildNode = new TreeNode(award.ToString()) { Tag = award };
+                        empChildNode.Nodes.Add(awardChildNode);
+                    }
+
+                    node.Nodes.Add(empChildNode);
+                }
+            }
+            else if (node.Tag is Employee emp)
+            {
+                // Обновляем узел сотрудника
+                node.Text = $"{emp.LastName} {emp.FirstName}";
+                node.Nodes.Clear();
+
+                // Добавляем награды сотрудника
+                foreach (var award in emp.Awards)
+                {
+                    var awardChildNode = new TreeNode(award.ToString()) { Tag = award };
+                    node.Nodes.Add(awardChildNode);
+                }
+            }
+            else if (node.Tag is Award award)
+            {
+                // Обновляем узел награды
+                node.Text = award.ToString();
+            }
         }
 
         private void btnLoad_Click(object sender, EventArgs e)
@@ -189,8 +232,17 @@ namespace dbms
             {
                 _context.Employees.Add(form.Employee);
                 _context.SaveChanges();
-                trvData.Nodes[1].Nodes.Add(new TreeNode(form.Employee.ToString()) { Tag = form.Employee });
-                //LoadEmployees();
+
+                var orgNode = trvData.Nodes[0].Nodes
+                    .Cast<TreeNode>()
+                    .FirstOrDefault(node => node.Tag is Organization org && org.Id == form.Employee.OrganizationId);
+
+                if (orgNode != null)
+                {
+                    var empNode = new TreeNode(form.Employee.ToString()) { Tag = form.Employee };
+                    orgNode.Nodes.Add(empNode);
+                    orgNode.Expand();
+                }
             }
         }
 
@@ -226,8 +278,19 @@ namespace dbms
             {
                 _context.Awards.Add(form.Award);
                 _context.SaveChanges();
-                trvData.Nodes[2].Nodes.Add(new TreeNode(form.Award.ToString()) { Tag = form.Award });
-                //LoadAwards();
+
+                var empNode = trvData.Nodes[0].Nodes
+                    .Cast<TreeNode>()
+                    .SelectMany(orgNode => orgNode.Nodes.Cast<TreeNode>())
+                    .FirstOrDefault(node => node.Tag is Employee emp && emp.Id == form.Award.EmployeeId);
+
+                if (empNode != null)
+                {
+                    // Добавляем награду в узел сотрудника
+                    var awardNode = new TreeNode(form.Award.ToString()) { Tag = form.Award };
+                    empNode.Nodes.Add(awardNode);
+                    empNode.Expand(); // Раскрываем узел сотрудника для отображения новой награды
+                }
             }
         }
 
@@ -254,6 +317,52 @@ namespace dbms
                 trvData.SelectedNode.Remove();
                 //LoadAwards();
             }
+        }
+
+        private void trvData_DragDrop(object sender, DragEventArgs e)
+        {
+            TreeNode draggedNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
+            Point pt = trvData.PointToClient(new Point(e.X, e.Y));
+            TreeNode targetNode = trvData.GetNodeAt(pt);
+
+            if (draggedNode != null && targetNode != null)
+            {
+                // Если перетаскиваемый элемент - сотрудник, а целевой узел - организация
+                if (draggedNode.Tag is Employee employee && targetNode.Tag is Organization organization)
+                {
+                    employee.Organization = organization;
+                    _context.SaveChanges();
+
+                    draggedNode.Remove();
+                    targetNode.Nodes.Add((TreeNode)draggedNode.Clone());
+
+                    UpdateNode(targetNode);
+                }
+                // Если перетаскиваемый элемент - награда, а целевой узел - сотрудник
+                else if (draggedNode.Tag is Award award && targetNode.Tag is Employee emp)
+                {
+                    award.Employee = emp;
+                    _context.SaveChanges();
+
+                    draggedNode.Remove();
+                    targetNode.Nodes.Add((TreeNode)draggedNode.Clone());
+
+                    UpdateNode(targetNode);
+                }
+            }
+        }
+
+        private void trvData_ItemDrag(object sender, ItemDragEventArgs e)
+        {
+            if (e.Item is TreeNode node && (node.Tag is Employee || node.Tag is Award))
+            {
+                DoDragDrop(e.Item, DragDropEffects.Move);
+            }
+        }
+
+        private void trvData_DragEnter(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Move;
         }
     }
 }

@@ -41,7 +41,7 @@ namespace dbms.editForms
             var employeesList = _employees
                 .Select(emp => new { Id = (int?)emp.Id, Name = emp.ToString() })
                 .ToList();
-            employeesList.Insert(0, new { Id = (int?)null, Name = "Нет награждённого" });
+            //employeesList.Insert(0, new { Id = (int?)null, Name = "Нет награждённого" });
 
             comboBoxAwarded.DataSource = employeesList;
             comboBoxAwarded.DisplayMember = "Name";
