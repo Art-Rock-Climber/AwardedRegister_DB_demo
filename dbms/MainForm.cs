@@ -73,6 +73,15 @@ namespace dbms
             var organizations = _context.Organizations.ToList();
             foreach (var org in organizations)
             {
+                _context.Entry(org).Collection(o => o.Employees).Load();
+                foreach (var emp in org.Employees)
+                {
+                    _context.Entry(emp).Collection(e => e.Awards).Load();
+                }
+            }
+
+            foreach (var org in organizations)
+            {
                 var orgChildNode = new TreeNode(org.Name) { Tag = org };
                 foreach (var emp in org.Employees)
                 {
@@ -250,12 +259,37 @@ namespace dbms
         {
             if (trvData.SelectedNode?.Tag is Employee emp)
             {
+                int? originalOrganizationId = emp.OrganizationId;
+
                 var form = new EmployeeForm(emp);
                 if (form.ShowDialog() == DialogResult.OK)
                 {
                     _context.SaveChanges();
                     trvData.SelectedNode.Text = form.Employee.ToString();
-                    //LoadEmployees();
+                    
+                    // Если организация изменилась
+                    if (emp.OrganizationId != originalOrganizationId)
+                    {
+                        trvData.SelectedNode.Remove();
+
+                        var orgNode = trvData.Nodes[0].Nodes
+                            .Cast<TreeNode>()
+                            .FirstOrDefault(node => node.Tag is Organization org 
+                            && org.Id == form.Employee.OrganizationId);
+
+                        if (orgNode != null)
+                        {
+                            var empNode = new TreeNode(form.Employee.ToString()) { Tag = form.Employee };
+                            foreach (var award in form.Employee.Awards) // Копируем награды сотрудника
+                            {
+                                var awardNode = new TreeNode(award.ToString()) { Tag = award };
+                                empNode.Nodes.Add(awardNode);
+                            }
+                            orgNode.Nodes.Add(empNode);
+                            orgNode.Expand();
+                            empNode.Expand();
+                        }
+                    }
                 }
             }
         }
@@ -298,12 +332,32 @@ namespace dbms
         {
             if (trvData.SelectedNode?.Tag is Award award)
             {
+                int? originalEmployeeId = award.EmployeeId;
+
                 var form = new AwardForm(award);
                 if (form.ShowDialog() == DialogResult.OK)
                 {
                     _context.SaveChanges();
                     trvData.SelectedNode.Text = form.Award.ToString();
-                    //LoadAwards();
+
+                    // Если организация изменилась
+                    if (award.EmployeeId != originalEmployeeId)
+                    {
+                        trvData.SelectedNode.Remove();
+
+                        var empNode = trvData.Nodes[0].Nodes
+                            .Cast<TreeNode>()
+                            .SelectMany(orgNode => orgNode.Nodes.Cast<TreeNode>())
+                            .FirstOrDefault(node => node.Tag is Employee emp
+                            && emp.Id == form.Award.EmployeeId);
+
+                        if (empNode != null)
+                        {
+                            var awardNode = new TreeNode(form.Award.ToString()) { Tag = form.Award };
+                            empNode.Nodes.Add(awardNode);
+                            empNode.Expand();
+                        }
+                    }
                 }
             }
         }

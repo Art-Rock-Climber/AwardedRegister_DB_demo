@@ -62,6 +62,11 @@ namespace dbms.editForms
                 MessageBox.Show("Основание награждения не может быть пустым.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+            if (comboBoxAwarded.SelectedValue is null || comboBoxAwarded.SelectedValue.ToString() == "")
+            {
+                MessageBox.Show("Поле с сотрудником не может быть пустым.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             // Обновляем поля
             Award.Reason = textBoxReason.Text;
